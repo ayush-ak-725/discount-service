@@ -74,3 +74,10 @@ Expected Response:
 
 Assumption: We are treating voucher discount as exclusive(applied instead of other discounts).
 
+
+To run Integration Test:
+command: "mvn -Dtest=DiscountServiceImplTest test"
+
+To Run Unit Test Cases:
+command: "mvn -Dtest=DiscountServiceUnitTest test"
+
