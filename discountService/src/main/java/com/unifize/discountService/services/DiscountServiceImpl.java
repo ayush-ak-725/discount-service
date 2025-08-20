@@ -16,12 +16,10 @@ import java.math.RoundingMode;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.NotEmpty;
 
-import java.math.BigDecimal;
-
 @Service
 @Slf4j
 @Validated
-public class DefaultDiscountService implements DiscountService {
+public class DiscountServiceImpl implements DiscountService {
 
     private final OffersRepository offers;
 
@@ -30,11 +28,11 @@ public class DefaultDiscountService implements DiscountService {
      * values from InMemory Offers Repository so defining it
      * under default constructor
      */
-    public DefaultDiscountService() {
+    public DiscountServiceImpl() {
         this.offers = InMemoryOffersRepository.defaultRepository();
     }
 
-    public DefaultDiscountService(OffersRepository offers) {
+    public DiscountServiceImpl(OffersRepository offers) {
         this.offers = Objects.requireNonNull(offers, "OffersRepository cannot be null");
     }
 

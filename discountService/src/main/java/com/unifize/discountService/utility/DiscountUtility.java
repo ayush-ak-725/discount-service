@@ -7,8 +7,7 @@ public final class DiscountUtility {
     public static BigDecimal pct(BigDecimal amount, BigDecimal percent) {
         if (amount == null || percent == null)
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        return amount.multiply(percent)
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        return amount.multiply(percent).setScale(2, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal minus(BigDecimal amount, BigDecimal discount) {
