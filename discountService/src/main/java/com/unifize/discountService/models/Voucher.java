@@ -19,4 +19,3 @@ public class Voucher {
     private String minCustomerTier;
     private BigDecimal maxDiscount;
 }
-

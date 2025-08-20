@@ -17,4 +17,3 @@ public class DiscountedPrice {
     private Map<String, BigDecimal> appliedDiscounts; // discount_name -> amount
     private String message;
 }
-

@@ -17,6 +17,5 @@ import lombok.AllArgsConstructor;
 public class DiscountRequest {
     private List<CartItem> cartItems;
     private CustomerProfile customer;
-    private PaymentInfo paymentInfo; // optional
+    private PaymentInfo paymentInfo;
 }
-

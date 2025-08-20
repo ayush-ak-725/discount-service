@@ -8,4 +8,3 @@ public class DiscountCalculationException extends RuntimeException {
         super(message, cause);
     }
 }
-

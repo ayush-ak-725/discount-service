@@ -1,8 +1,16 @@
-# discount-service
-Discount Service for Unifize Interview
+# Discount Service
+**Discount Service for Unifize Interview**
+A Spring Boot service to calculate discounts on products based on brand, customer profile, vouchers, and offers.
 
-Initially the project structure given by the AI was as below:
+## Repostory
+For now we have used InMemoryOffersRepository to 
+hardcode the discount scenarios, to add more scenarios
+just add into this class or can also store in the postgres
+database and can fetch from there at run time or can be
+also stored in cache depending upon the nature of
+the data and changing business requirements.
 
+## Project Structure
 fashion-discount-service/
 ├─ pom.xml
 ├─ README.md
@@ -31,53 +39,113 @@ fashion-discount-service/
          ├─ DefaultDiscountServiceTest.java
          └─ IntegrationFlowTest.java
 
-Steps to run the service:
+## Prerequisites
+- Java 17+
+- Maven 3.6+
+- Git
+- cURL or Postman (for testing API)
 
-Step 1: Clone the service to your local.
-Step 2: cd discount-service
-Step 3: cd discountService
-Step 4: run "mvn clean install" to install required dependencies.
-Step 5: run: "mvn spring-boot:run" , to run the service
-and then execute the below curl either from postman or terminal.
+## Setup & Run
+1. Clone the repository:
+   git clone https://github.com/ayush-ak-725/discount-service.git
+   cd discount-service/discountService
+2. Checkout feature branch:
+   git checkout ai-commit
+3. Install dependencies:
+   mvn clean install
+4. Run the service:
+   mvn spring-boot:run
+   Service will start on http://localhost:8080
 
-curl to hit the api:
-curl --location 'http://localhost:8080/api/discounts/calculate' \
---header 'Content-Type: application/json' \
---data '{
+## API Endpoint
+POST /api/discounts/calculate
+
+Success Case:
+Request Body:
+{
   "cartItems": [
     {
-      "id": "PUMA-TS-1",
-      "name": "Puma Tee",
-      "brand": "PUMA",
-      "category": "T-shirts",
-      "price": 1000.0,
-      "quantity": 1
+      "product": {
+        "id": "PUMA-TS-2",
+        "name": "Puma Tee",
+        "brand": "PUMA",
+        "category": "T-shirts",
+        "basePrice": 1000.0
+      },
+      "quantity": 1,
+      "size": "M"
     }
   ],
+  "customer": {
+    "id": "CUST005",
+    "tier": "GOLD"
+  },
   "paymentInfo": {
     "method": "CARD",
-    "bank": "ICICI",
+    "bankName": "ICICI",
     "cardType": "DEBIT"
-  },
-  "voucher": "SUPER69"
-}'
-
-Expected Response:
-
+  }
+}
+Response Body:
 {
-  "finalPrice": 310.0,
-  "totalDiscount": 690.0,
-  "appliedDiscounts": [
-    "Voucher SUPER69 - 69% off"
-  ]
+    "originalPrice": 1000.00,
+    "finalPrice": 486.00,
+    "appliedDiscounts": {
+        "BRAND(PUMA)": 400.00,
+        "CATEGORY(T-shirts)": 60.00,
+        "BANK(ICICI)": 54.00
+    },
+    "message": "Discounts applied: [BRAND(PUMA), CATEGORY(T-shirts), BANK(ICICI)]"
 }
 
-Assumption: We are treating voucher discount as exclusive(applied instead of other discounts).
+Failure Case:
+Request Body:
+{
+  "cartItems": [
+    {
+      "product": {
+        "id": "PUMA-TS-1",
+        "name": "Puma Tee",
+        "brand": "PUMA",
+        "category": "T-shirts",
+        "basePrice": 1000.0
+      },
+      "quantity": 1,
+      "size": "M"
+    }
+  ],
+  "customer": {
+    "id": "CUST001",
+    "tier": "GOLD"
+  },
+  "paymentInfo": {
+    "method": "VOUCHER:SUPER10"
+  }
+}
 
+Response Body:
+{
+    "originalPrice": null,
+    "finalPrice": null,
+    "appliedDiscounts": null,
+    "message": "Error calculating discounts: Unknown voucher: SUPER10"
+}
 
-To run Integration Test:
-command: "mvn -Dtest=DiscountServiceImplTest test"
+## Refer to the Json the File for postman curl RR under
+- discountService/src/main/resources/discount-service.postman_collection.json
 
-To Run Unit Test Cases:
-command: "mvn -Dtest=DiscountServiceUnitTest test"
+Note: Voucher discounts are exclusive and replace other discounts.
 
+## Assumptions
+- Voucher discount is applied exclusively instead of combining with other discounts.
+- All amounts are in the default currency (assumed INR).
+- Service currently uses an in-memory offers repository (InMemoryOffersRepository).
+
+## Running Tests
+mvn test
+Covers unit tests for DefaultDiscountService and integration flow tests.
+- To run Integration test separately: mvn -Dtest=DiscountServiceImplTest test
+- To run Unit tests separately: mvn -Dtest=DiscountServiceUnitTest test
+
+## Contact
+For questions or clarifications, contact: [Ayush Kumar Agrawal / ayush.ak3107@gmail.com / +91-7905244320]

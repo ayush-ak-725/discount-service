@@ -5,4 +5,3 @@ public enum BrandTier {
     REGULAR,
     BUDGET
 }
-

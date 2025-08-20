@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.math.RoundingMode;
 import org.springframework.validation.annotation.Validated;
-import jakarta.validation.constraints.NotEmpty;
 
 @Service
 @Slf4j
@@ -58,21 +57,17 @@ public class DiscountServiceImpl implements DiscountService {
             Map<String, BigDecimal> breakdown = new LinkedHashMap<>();
             BigDecimal originalPrice = DiscountUtility.zero();
 
-            // 1) Apply brand & category discounts
             BigDecimal afterBrandCategory = applyBrandCategoryDiscounts(cartItems, breakdown);
             BigDecimal runningTotal = afterBrandCategory;
 
-            // 2) Apply voucher if present
             if (paymentInfo != null && paymentInfo.isPresent()) {
                 runningTotal = applyVoucherIfPresent(paymentInfo.get(), cartItems, customer, runningTotal, breakdown);
             }
 
-            // 3) Apply bank offer if present
             if (paymentInfo != null && paymentInfo.isPresent()) {
                 runningTotal = applyBankOfferIfPresent(paymentInfo.get(), runningTotal, breakdown);
             }
 
-            // Compute original price safely
             originalPrice = cartItems.stream()
                     .filter(ci -> ci != null && ci.getProduct() != null)
                     .map(ci -> DiscountUtility.mul(Optional.ofNullable(ci.getProduct().getBasePrice()).orElse(BigDecimal.ZERO), ci.getQuantity()))
@@ -111,7 +106,6 @@ public class DiscountServiceImpl implements DiscountService {
             BigDecimal basePrice = Optional.ofNullable(p.getBasePrice()).orElse(BigDecimal.ZERO);
             BigDecimal price = basePrice;
 
-            // Brand discount
             BigDecimal brandPct = Optional.ofNullable(offers.brandMinOff().get(p.getBrand())).orElse(BigDecimal.ZERO);
             if (brandPct.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal discount = DiscountUtility.pct(price, brandPct);
@@ -119,7 +113,6 @@ public class DiscountServiceImpl implements DiscountService {
                 addDiscountBreakdown(breakdown, "BRAND(" + p.getBrand() + ")", DiscountUtility.mul(discount, item.getQuantity()));
             }
 
-            // Category discount
             BigDecimal catPct = Optional.ofNullable(offers.categoryExtraOff().get(p.getCategory())).orElse(BigDecimal.ZERO);
             if (catPct.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal discount = DiscountUtility.pct(price, catPct);
@@ -139,14 +132,10 @@ public class DiscountServiceImpl implements DiscountService {
                                              Map<String, BigDecimal> breakdown)
             throws DiscountValidationException {
 
-        if (paymentInfo == null || paymentInfo.getMethod() == null) {
-            return runningTotal; // no voucher to apply
-        }
+        if (paymentInfo == null || paymentInfo.getMethod() == null) return runningTotal;
 
         String method = paymentInfo.getMethod().trim();
-        if (!method.startsWith("VOUCHER:")) {
-            return runningTotal; // not a voucher
-        }
+        if (!method.startsWith("VOUCHER:")) return runningTotal;
 
         String voucherCode = method.substring("VOUCHER:".length()).trim();
         if (voucherCode.isEmpty()) {
@@ -156,14 +145,11 @@ public class DiscountServiceImpl implements DiscountService {
 
         Voucher v = offers.findVoucher(voucherCode).orElse(null);
         if (v == null) {
-            log.warn("Unknown voucher: {}", voucherCode);
-            return runningTotal;
+            throw new DiscountValidationException("Unknown voucher: " + voucherCode);
         }
 
-        // Safe validation
         boolean applicable = true;
 
-        // Brand exclusions
         if (v.getExcludedBrands() != null && !v.getExcludedBrands().isEmpty()) {
             for (CartItem ci : cartItems) {
                 if (ci != null && ci.getProduct() != null && v.getExcludedBrands().contains(ci.getProduct().getBrand())) {
@@ -173,7 +159,6 @@ public class DiscountServiceImpl implements DiscountService {
             }
         }
 
-        // Category inclusions
         if (applicable && v.getIncludedCategories() != null && !v.getIncludedCategories().isEmpty()) {
             boolean anyMatch = cartItems.stream()
                     .filter(Objects::nonNull)
@@ -182,7 +167,6 @@ public class DiscountServiceImpl implements DiscountService {
             if (!anyMatch) applicable = false;
         }
 
-        // Customer tier
         if (applicable && v.getMinCustomerTier() != null) {
             String tier = customer != null ? customer.getTier() : null;
             if (tier == null || !tier.equalsIgnoreCase(v.getMinCustomerTier())) {
@@ -195,19 +179,19 @@ public class DiscountServiceImpl implements DiscountService {
             return runningTotal;
         }
 
-        // Calculate discount safely
-        BigDecimal voucherDisc = DiscountUtility.pct(runningTotal, v.getPercentOff());
+        BigDecimal voucherDisc = Optional.of(DiscountUtility.pct(runningTotal, v.getPercentOff()))
+                .orElse(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
+
         if (v.getMaxDiscount() != null) {
             voucherDisc = voucherDisc.min(v.getMaxDiscount());
         }
-        voucherDisc = Optional.ofNullable(voucherDisc).orElse(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
 
         runningTotal = DiscountUtility.minus(runningTotal, voucherDisc);
         addDiscountBreakdown(breakdown, "VOUCHER(" + voucherCode + ")", voucherDisc);
 
         return runningTotal;
     }
-
 
     private BigDecimal applyBankOfferIfPresent(PaymentInfo paymentInfo, BigDecimal runningTotal,
                                                Map<String, BigDecimal> breakdown) {
@@ -217,7 +201,7 @@ public class DiscountServiceImpl implements DiscountService {
 
         String bank = paymentInfo.getBankName();
         if (bank == null || bank.isEmpty()) {
-            return runningTotal; // no bank offer
+            return runningTotal;
         }
 
         BigDecimal bankPct = Optional.ofNullable(offers.bankOffers().get(bank)).orElse(BigDecimal.ZERO);
@@ -245,8 +229,6 @@ public class DiscountServiceImpl implements DiscountService {
 
         Voucher v = offers.findVoucher(code).orElse(null);
         if (v == null) return false;
-
-        // Brand exclusions
         if (v.getExcludedBrands() != null && !v.getExcludedBrands().isEmpty() && cartItems != null) {
             for (CartItem ci : cartItems) {
                 if (ci != null && ci.getProduct() != null && v.getExcludedBrands().contains(ci.getProduct().getBrand())) {
@@ -254,8 +236,6 @@ public class DiscountServiceImpl implements DiscountService {
                 }
             }
         }
-
-        // Category inclusions
         if (v.getIncludedCategories() != null && !v.getIncludedCategories().isEmpty() && cartItems != null) {
             boolean anyMatch = cartItems.stream()
                     .filter(Objects::nonNull)
@@ -263,15 +243,10 @@ public class DiscountServiceImpl implements DiscountService {
                     .anyMatch(ci -> v.getIncludedCategories().contains(ci.getProduct().getCategory()));
             if (!anyMatch) return false;
         }
-
-        // Customer tier requirement
         if (v.getMinCustomerTier() != null) {
             String tier = customer != null ? customer.getTier() : null;
-            if (tier == null || !tier.equalsIgnoreCase(v.getMinCustomerTier())) {
-                return false;
-            }
+            return tier != null && tier.equalsIgnoreCase(v.getMinCustomerTier());
         }
-
         return true;
     }
 }

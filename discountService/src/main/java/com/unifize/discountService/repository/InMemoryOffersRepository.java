@@ -33,7 +33,6 @@ public class InMemoryOffersRepository implements OffersRepository {
         return Optional.ofNullable(vouchers.get(code));
     }
 
-    // Factory with the scenario described in the prompt
     public static InMemoryOffersRepository defaultRepository() {
         Map<String, BigDecimal> brand = java.util.Map.of(
                 "PUMA", new BigDecimal("0.40")

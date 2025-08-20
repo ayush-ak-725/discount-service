@@ -14,4 +14,3 @@ public class CartItem {
     private int quantity;
     private String size;
 }
-

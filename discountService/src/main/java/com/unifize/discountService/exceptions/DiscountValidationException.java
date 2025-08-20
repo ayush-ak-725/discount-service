@@ -9,4 +9,3 @@ public class DiscountValidationException extends RuntimeException {
         super(message, cause);
     }
 }
-
