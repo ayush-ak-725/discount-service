@@ -1,0 +1,256 @@
+{
+	"info": {
+		"_postman_id": "b282210e-e916-46a9-be51-8bd7e01b83f9",
+		"name": "Discount-Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47740413",
+		"_collection_link": "https://ayush-ak3107-2577560.postman.co/workspace/Ayush-Agrawal's-Workspace~ef57e937-31a8-4efb-8246-eb85a52a2fb1/collection/47740413-b282210e-e916-46a9-be51-8bd7e01b83f9?action=share&source=collection_link&creator=47740413"
+	},
+	"item": [
+		{
+			"name": "voucher-discount(exclusive)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cartItems\": [\n    {\n      \"product\": {\n        \"id\": \"PUMA-TS-1\",\n        \"name\": \"Puma Tee\",\n        \"brand\": \"PUMA\",\n        \"category\": \"T-shirts\",\n        \"basePrice\": 1000.0\n      },\n      \"quantity\": 1,\n      \"size\": \"M\"\n    }\n  ],\n  \"customer\": {\n    \"id\": \"CUST001\",\n    \"tier\": \"GOLD\"\n  },\n  \"paymentInfo\": {\n    \"method\": \"CARD\",\n    \"bankName\": \"ICICI\",\n    \"cardType\": \"DEBIT\"\n  },\n  \"voucher\": \"SUPER69\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/discounts/calculate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"discounts",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "brand-discount(only)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cartItems\": [\n    {\n      \"product\": {\n        \"id\": \"PUMA-TS-1\",\n        \"name\": \"Puma Tee\",\n        \"brand\": \"PUMA\",\n        \"category\": \"Pants\",\n        \"basePrice\": 1000.0\n      },\n      \"quantity\": 1,\n      \"size\": \"M\"\n    }\n  ],\n  \"customer\": {\n    \"id\": \"CUST002\",\n    \"tier\": \"SILVER\"\n  },\n  \"paymentInfo\": {\n    \"method\": \"CARD\",\n    \"bankName\": \"AXIS\",\n    \"cardType\": \"CREDIT\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/discounts/calculate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"discounts",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "category-discount(only)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cartItems\": [\n    {\n      \"product\": {\n        \"id\": \"ADIDAS-TS-1\",\n        \"name\": \"Adidas Tee\",\n        \"brand\": \"ADIDAS\",\n        \"category\": \"T-shirts\",\n        \"basePrice\": 1000.0\n      },\n      \"quantity\": 1,\n      \"size\": \"L\"\n    }\n  ],\n  \"customer\": {\n    \"id\": \"CUST003\",\n    \"tier\": \"BRONZE\"\n  },\n  \"paymentInfo\": {\n    \"method\": \"CARD\",\n    \"bankName\": \"HDFC\",\n    \"cardType\": \"CREDIT\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/discounts/calculate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"discounts",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "bank-discount(only)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cartItems\": [\n    {\n      \"product\": {\n        \"id\": \"ADIDAS-SHOE-1\",\n        \"name\": \"Adidas Shoe\",\n        \"brand\": \"ADIDAS\",\n        \"category\": \"Shoes\",\n        \"basePrice\": 2000.0\n      },\n      \"quantity\": 1,\n      \"size\": \"9\"\n    }\n  ],\n  \"customer\": {\n    \"id\": \"CUST004\",\n    \"tier\": \"SILVER\"\n  },\n  \"paymentInfo\": {\n    \"method\": \"CARD\",\n    \"bankName\": \"ICICI\",\n    \"cardType\": \"DEBIT\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/discounts/calculate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"discounts",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "brand-category-bank-discount",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cartItems\": [\n    {\n      \"product\": {\n        \"id\": \"PUMA-TS-2\",\n        \"name\": \"Puma Tee\",\n        \"brand\": \"PUMA\",\n        \"category\": \"T-shirts\",\n        \"basePrice\": 1000.0\n      },\n      \"quantity\": 1,\n      \"size\": \"M\"\n    }\n  ],\n  \"customer\": {\n    \"id\": \"CUST005\",\n    \"tier\": \"GOLD\"\n  },\n  \"paymentInfo\": {\n    \"method\": \"CARD\",\n    \"bankName\": \"ICICI\",\n    \"cardType\": \"DEBIT\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/discounts/calculate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"discounts",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "no-discount",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cartItems\": [\n    {\n      \"product\": {\n        \"id\": \"NIKE-HOODIE-1\",\n        \"name\": \"Nike Hoodie\",\n        \"brand\": \"NIKE\",\n        \"category\": \"Hoodies\",\n        \"basePrice\": 1500.0\n      },\n      \"quantity\": 1,\n      \"size\": \"L\"\n    }\n  ],\n  \"customer\": {\n    \"id\": \"CUST006\",\n    \"tier\": \"BRONZE\"\n  },\n  \"paymentInfo\": {\n    \"method\": \"CARD\",\n    \"bankName\": \"SBI\",\n    \"cardType\": \"CREDIT\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/discounts/calculate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"discounts",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "brand-category-discount",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cartItems\": [\n    {\n      \"product\": {\n        \"id\": \"PUMA-TS-1\",\n        \"name\": \"Puma Tee\",\n        \"brand\": \"PUMA\",\n        \"category\": \"T-shirts\",\n        \"basePrice\": 1000.0\n      },\n      \"quantity\": 1,\n      \"size\": \"M\"\n    }\n  ],\n  \"customer\": {\n    \"id\": \"CUST002\",\n    \"tier\": \"SILVER\"\n  },\n  \"paymentInfo\": {\n    \"method\": \"CARD\",\n    \"bankName\": \"AXIS\",\n    \"cardType\": \"CREDIT\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/discounts/calculate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"discounts",
+						"calculate"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

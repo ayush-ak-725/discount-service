@@ -38,36 +38,44 @@ public class DiscountServiceImpl implements DiscountService {
 
     @Override
     public DiscountedPrice calculateCartDiscounts(
-            @NotEmpty List<CartItem> cartItems,
+            List<CartItem> cartItems,
             CustomerProfile customer,
             Optional<PaymentInfo> paymentInfo
     ) throws DiscountCalculationException {
         try {
-            log.info(offers.brandMinOff().toString());
-            log.info(cartItems.toString());
+            if (cartItems == null || cartItems.isEmpty()) {
+                return DiscountedPrice.builder()
+                        .originalPrice(DiscountUtility.zero())
+                        .finalPrice(DiscountUtility.zero())
+                        .appliedDiscounts(Collections.emptyMap())
+                        .message("No items in cart")
+                        .build();
+            }
+
+            log.info("Brand offers: {}", offers.brandMinOff());
+            log.info("CartItems: {}", cartItems);
+
             Map<String, BigDecimal> breakdown = new LinkedHashMap<>();
             BigDecimal originalPrice = DiscountUtility.zero();
-            BigDecimal afterBrandCategory = DiscountUtility.zero();
 
             // 1) Apply brand & category discounts
-            afterBrandCategory = applyBrandCategoryDiscounts(cartItems, breakdown);
-
-            // Running total after brand/category
+            BigDecimal afterBrandCategory = applyBrandCategoryDiscounts(cartItems, breakdown);
             BigDecimal runningTotal = afterBrandCategory;
 
             // 2) Apply voucher if present
-            if (paymentInfo.isPresent()) {
+            if (paymentInfo != null && paymentInfo.isPresent()) {
                 runningTotal = applyVoucherIfPresent(paymentInfo.get(), cartItems, customer, runningTotal, breakdown);
             }
 
             // 3) Apply bank offer if present
-            if (paymentInfo.isPresent()) {
+            if (paymentInfo != null && paymentInfo.isPresent()) {
                 runningTotal = applyBankOfferIfPresent(paymentInfo.get(), runningTotal, breakdown);
             }
 
-            // Compute original price
+            // Compute original price safely
             originalPrice = cartItems.stream()
-                    .map(ci -> DiscountUtility.mul(ci.getProduct().getBasePrice(), ci.getQuantity()))
+                    .filter(ci -> ci != null && ci.getProduct() != null)
+                    .map(ci -> DiscountUtility.mul(Optional.ofNullable(ci.getProduct().getBasePrice()).orElse(BigDecimal.ZERO), ci.getQuantity()))
                     .reduce(DiscountUtility.zero(), DiscountUtility::sum);
 
             log.info("Discounts applied: {}", breakdown);
@@ -92,11 +100,19 @@ public class DiscountServiceImpl implements DiscountService {
         BigDecimal total = DiscountUtility.zero();
 
         for (CartItem item : cartItems) {
+            if (item == null) continue;
+
             Product p = item.getProduct();
-            BigDecimal price = p.getBasePrice();
+            if (p == null) {
+                log.warn("CartItem has null product: {}", item);
+                continue;
+            }
+
+            BigDecimal basePrice = Optional.ofNullable(p.getBasePrice()).orElse(BigDecimal.ZERO);
+            BigDecimal price = basePrice;
 
             // Brand discount
-            BigDecimal brandPct = offers.brandMinOff().getOrDefault(p.getBrand(), BigDecimal.ZERO);
+            BigDecimal brandPct = Optional.ofNullable(offers.brandMinOff().get(p.getBrand())).orElse(BigDecimal.ZERO);
             if (brandPct.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal discount = DiscountUtility.pct(price, brandPct);
                 price = DiscountUtility.minus(price, discount);
@@ -104,7 +120,7 @@ public class DiscountServiceImpl implements DiscountService {
             }
 
             // Category discount
-            BigDecimal catPct = offers.categoryExtraOff().getOrDefault(p.getCategory(), BigDecimal.ZERO);
+            BigDecimal catPct = Optional.ofNullable(offers.categoryExtraOff().get(p.getCategory())).orElse(BigDecimal.ZERO);
             if (catPct.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal discount = DiscountUtility.pct(price, catPct);
                 price = DiscountUtility.minus(price, discount);
@@ -123,42 +139,97 @@ public class DiscountServiceImpl implements DiscountService {
                                              Map<String, BigDecimal> breakdown)
             throws DiscountValidationException {
 
-        String method = paymentInfo.getMethod();
-        if (method != null && method.startsWith("VOUCHER:")) {
-            String voucherCode = method.substring("VOUCHER:".length()).trim();
-            if (!validateDiscountCode(voucherCode, cartItems, customer)) {
-                throw new DiscountValidationException("Voucher not applicable: " + voucherCode);
-            }
-
-            Voucher v = offers.findVoucher(voucherCode)
-                    .orElseThrow(() -> new DiscountValidationException("Unknown voucher: " + voucherCode));
-
-            BigDecimal voucherDisc = DiscountUtility.pct(runningTotal, v.getPercentOff());
-            if (v.getMaxDiscount() != null) {
-                voucherDisc = voucherDisc.min(v.getMaxDiscount());
-            }
-            voucherDisc = voucherDisc.setScale(2, RoundingMode.HALF_UP);
-
-            runningTotal = DiscountUtility.minus(runningTotal, voucherDisc);
-            addDiscountBreakdown(breakdown, "VOUCHER(" + voucherCode + ")", voucherDisc);
+        if (paymentInfo == null || paymentInfo.getMethod() == null) {
+            return runningTotal; // no voucher to apply
         }
+
+        String method = paymentInfo.getMethod().trim();
+        if (!method.startsWith("VOUCHER:")) {
+            return runningTotal; // not a voucher
+        }
+
+        String voucherCode = method.substring("VOUCHER:".length()).trim();
+        if (voucherCode.isEmpty()) {
+            log.warn("Voucher code is empty");
+            return runningTotal;
+        }
+
+        Voucher v = offers.findVoucher(voucherCode).orElse(null);
+        if (v == null) {
+            log.warn("Unknown voucher: {}", voucherCode);
+            return runningTotal;
+        }
+
+        // Safe validation
+        boolean applicable = true;
+
+        // Brand exclusions
+        if (v.getExcludedBrands() != null && !v.getExcludedBrands().isEmpty()) {
+            for (CartItem ci : cartItems) {
+                if (ci != null && ci.getProduct() != null && v.getExcludedBrands().contains(ci.getProduct().getBrand())) {
+                    applicable = false;
+                    break;
+                }
+            }
+        }
+
+        // Category inclusions
+        if (applicable && v.getIncludedCategories() != null && !v.getIncludedCategories().isEmpty()) {
+            boolean anyMatch = cartItems.stream()
+                    .filter(Objects::nonNull)
+                    .filter(ci -> ci.getProduct() != null)
+                    .anyMatch(ci -> v.getIncludedCategories().contains(ci.getProduct().getCategory()));
+            if (!anyMatch) applicable = false;
+        }
+
+        // Customer tier
+        if (applicable && v.getMinCustomerTier() != null) {
+            String tier = customer != null ? customer.getTier() : null;
+            if (tier == null || !tier.equalsIgnoreCase(v.getMinCustomerTier())) {
+                applicable = false;
+            }
+        }
+
+        if (!applicable) {
+            log.warn("Voucher {} not applicable", voucherCode);
+            return runningTotal;
+        }
+
+        // Calculate discount safely
+        BigDecimal voucherDisc = DiscountUtility.pct(runningTotal, v.getPercentOff());
+        if (v.getMaxDiscount() != null) {
+            voucherDisc = voucherDisc.min(v.getMaxDiscount());
+        }
+        voucherDisc = Optional.ofNullable(voucherDisc).orElse(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+
+        runningTotal = DiscountUtility.minus(runningTotal, voucherDisc);
+        addDiscountBreakdown(breakdown, "VOUCHER(" + voucherCode + ")", voucherDisc);
 
         return runningTotal;
     }
+
 
     private BigDecimal applyBankOfferIfPresent(PaymentInfo paymentInfo, BigDecimal runningTotal,
                                                Map<String, BigDecimal> breakdown) {
-        String bank = paymentInfo.getBankName();
-        if (bank != null) {
-            BigDecimal bankPct = offers.bankOffers().getOrDefault(bank, BigDecimal.ZERO);
-            if (bankPct.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal bankDisc = DiscountUtility.pct(runningTotal, bankPct).setScale(2, RoundingMode.HALF_UP);
-                runningTotal = DiscountUtility.minus(runningTotal, bankDisc);
-                addDiscountBreakdown(breakdown, "BANK(" + bank + ")", bankDisc);
-            }
+        if (paymentInfo == null || runningTotal == null) {
+            return Optional.ofNullable(runningTotal).orElse(DiscountUtility.zero());
         }
+
+        String bank = paymentInfo.getBankName();
+        if (bank == null || bank.isEmpty()) {
+            return runningTotal; // no bank offer
+        }
+
+        BigDecimal bankPct = Optional.ofNullable(offers.bankOffers().get(bank)).orElse(BigDecimal.ZERO);
+        if (bankPct.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal bankDisc = DiscountUtility.pct(runningTotal, bankPct).setScale(2, RoundingMode.HALF_UP);
+            runningTotal = DiscountUtility.minus(runningTotal, bankDisc);
+            addDiscountBreakdown(breakdown, "BANK(" + bank + ")", bankDisc);
+        }
+
         return runningTotal;
     }
+
 
     private void addDiscountBreakdown(Map<String, BigDecimal> breakdown, String key, BigDecimal value) {
         if (value.compareTo(BigDecimal.ZERO) > 0) {
@@ -170,27 +241,33 @@ public class DiscountServiceImpl implements DiscountService {
     public boolean validateDiscountCode(String code, List<CartItem> cartItems, CustomerProfile customer)
             throws DiscountValidationException {
 
+        if (code == null || code.isEmpty()) return false;
+
         Voucher v = offers.findVoucher(code).orElse(null);
         if (v == null) return false;
 
         // Brand exclusions
-        if (v.getExcludedBrands() != null && !v.getExcludedBrands().isEmpty()) {
+        if (v.getExcludedBrands() != null && !v.getExcludedBrands().isEmpty() && cartItems != null) {
             for (CartItem ci : cartItems) {
-                if (v.getExcludedBrands().contains(ci.getProduct().getBrand())) return false;
+                if (ci != null && ci.getProduct() != null && v.getExcludedBrands().contains(ci.getProduct().getBrand())) {
+                    return false;
+                }
             }
         }
 
         // Category inclusions
-        if (v.getIncludedCategories() != null && !v.getIncludedCategories().isEmpty()) {
+        if (v.getIncludedCategories() != null && !v.getIncludedCategories().isEmpty() && cartItems != null) {
             boolean anyMatch = cartItems.stream()
+                    .filter(Objects::nonNull)
+                    .filter(ci -> ci.getProduct() != null)
                     .anyMatch(ci -> v.getIncludedCategories().contains(ci.getProduct().getCategory()));
             if (!anyMatch) return false;
         }
 
         // Customer tier requirement
         if (v.getMinCustomerTier() != null) {
-            if (customer == null || customer.getTier() == null ||
-                    !customer.getTier().equalsIgnoreCase(v.getMinCustomerTier())) {
+            String tier = customer != null ? customer.getTier() : null;
+            if (tier == null || !tier.equalsIgnoreCase(v.getMinCustomerTier())) {
                 return false;
             }
         }
