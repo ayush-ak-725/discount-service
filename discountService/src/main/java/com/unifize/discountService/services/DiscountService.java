@@ -1,7 +1,11 @@
-package com.unifize.discountService;
+package com.unifize.discountService.services;
 
-import java.util.List;
-import java.util.Optional;
+import com.unifize.discountService.exceptions.DiscountCalculationException;
+import com.unifize.discountService.exceptions.DiscountValidationException;
+import com.unifize.discountService.models.CartItem;
+import com.unifize.discountService.models.CustomerProfile;
+import com.unifize.discountService.models.PaymentInfo;
+import com.unifize.discountService.models.dto.response.DiscountedPrice;
 import org.springframework.stereotype.Service;
 
 @Service

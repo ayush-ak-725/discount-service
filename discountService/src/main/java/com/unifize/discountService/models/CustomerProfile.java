@@ -1,4 +1,4 @@
-package com.unifize.discountService;
+package com.unifize.discountService.models;
 
 import lombok.Data;
 import lombok.Builder;
@@ -11,6 +11,5 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class CustomerProfile {
     private String id;
-    private String tier; // e.g., GOLD, SILVER, PREMIUM
+    private String tier;
 }
-

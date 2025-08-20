@@ -1,5 +1,10 @@
-package com.unifize.discountService;
+package com.unifize.discountService.controller;
 
+import com.unifize.discountService.exceptions.DiscountCalculationException;
+import com.unifize.discountService.exceptions.DiscountValidationException;
+import com.unifize.discountService.models.dto.response.DiscountedPrice;
+import com.unifize.discountService.models.dto.request.DiscountRequest;
+import com.unifize.discountService.services.DiscountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

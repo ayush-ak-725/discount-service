@@ -1,6 +1,7 @@
-package com.unifize.discountService;
+package com.unifize.discountService.models;
 
 import java.math.BigDecimal;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -16,5 +17,5 @@ public class Product {
     private BrandTier brandTier;
     private String category;
     private BigDecimal basePrice;
-    private BigDecimal currentPrice; // After brand/category discount
+    private BigDecimal currentPrice;
 }

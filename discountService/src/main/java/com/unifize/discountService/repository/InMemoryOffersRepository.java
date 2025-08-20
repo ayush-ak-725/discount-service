@@ -1,9 +1,14 @@
-package com.unifize.discountService;
+package com.unifize.discountService.repository;
+
+import com.unifize.discountService.models.Voucher;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class InMemoryOffersRepository implements OffersRepository {
     private final Map<String, BigDecimal> brand;
     private final Map<String, BigDecimal> category;

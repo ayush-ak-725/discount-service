@@ -1,4 +1,4 @@
-package com.unifize.discountService;
+package com.unifize.discountService.models.dto.response;
 
 import java.math.BigDecimal;
 import java.util.Map;

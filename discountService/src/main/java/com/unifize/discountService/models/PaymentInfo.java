@@ -1,4 +1,4 @@
-package com.unifize.discountService;
+package com.unifize.discountService.models;
 
 import lombok.Data;
 import lombok.Builder;
@@ -9,9 +9,9 @@ import lombok.AllArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItem {
-    private Product product;
-    private int quantity;
-    private String size;
+public class PaymentInfo {
+    private String method;
+    private String bankName;
+    private String cardType;
 }
 

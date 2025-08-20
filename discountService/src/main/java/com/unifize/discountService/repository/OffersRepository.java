@@ -1,4 +1,6 @@
-package com.unifize.discountService;
+package com.unifize.discountService.repository;
+
+import com.unifize.discountService.models.Voucher;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -10,4 +12,3 @@ public interface OffersRepository {
     Map<String, BigDecimal> bankOffers(); // bank -> percent (0.10 means 10%)
     Optional<Voucher> findVoucher(String code);
 }
-
